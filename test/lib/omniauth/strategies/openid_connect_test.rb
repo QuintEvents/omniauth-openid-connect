@@ -46,11 +46,11 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     assert_equal user_info.sub, strategy.uid
   end
 
-  def test_callback_phase(session = {}, params = {})
+  def test_callback_phase(_session = {}, _params = {})
     code = SecureRandom.hex(16)
     state = SecureRandom.hex(16)
     nonce = SecureRandom.hex(16)
-    request.stubs(:params).returns({'code' => code,'state' => state})
+    request.stubs(:params).returns('code' => code, 'state' => state)
     request.stubs(:path_info).returns('')
 
     strategy.options.issuer = 'example.com'
@@ -58,7 +58,7 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     strategy.options.client_jwk_signing_key = File.read('test/fixtures/jwks.json')
 
     id_token = stub('OpenIDConnect::ResponseObject::IdToken')
-    id_token.stubs(:verify!).with({:issuer => strategy.options.issuer, :client_id => @identifier, :nonce => nonce}).returns(true)
+    id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
     ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
 
     strategy.unstub(:user_info)
@@ -71,7 +71,7 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     client.expects(:access_token!).at_least_once.returns(access_token)
     access_token.expects(:userinfo!).returns(user_info)
 
-    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
     strategy.callback_phase
   end
 
@@ -81,7 +81,7 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     nonce = SecureRandom.hex(16)
     jwks = JSON::JWK::Set.new(JSON.parse(File.read('test/fixtures/jwks.json'))['keys'])
 
-    request.stubs(:params).returns({'code' => code,'state' => state})
+    request.stubs(:params).returns('code' => code, 'state' => state)
     request.stubs(:path_info).returns('')
 
     strategy.options.client_options.host = 'example.com'
@@ -101,7 +101,7 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     ::OpenIDConnect::Discovery::Provider::Config.stubs(:discover!).with('https://example.com/').returns(config)
 
     id_token = stub('OpenIDConnect::ResponseObject::IdToken')
-    id_token.stubs(:verify!).with({:issuer => 'https://example.com/', :client_id => @identifier, :nonce => nonce}).returns(true)
+    id_token.stubs(:verify!).with(issuer: 'https://example.com/', client_id: @identifier, nonce: nonce).returns(true)
     ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
 
     strategy.unstub(:user_info)
@@ -114,17 +114,17 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     client.expects(:access_token!).at_least_once.returns(access_token)
     access_token.expects(:userinfo!).returns(user_info)
 
-    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
     strategy.callback_phase
   end
 
   def test_callback_phase_with_error
     state = SecureRandom.hex(16)
     nonce = SecureRandom.hex(16)
-    request.stubs(:params).returns({'error' => 'invalid_request'})
+    request.stubs(:params).returns('error' => 'invalid_request')
     request.stubs(:path_info).returns('')
 
-    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
     strategy.expects(:fail!)
     strategy.callback_phase
   end
@@ -133,27 +133,27 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     code = SecureRandom.hex(16)
     state = SecureRandom.hex(16)
     nonce = SecureRandom.hex(16)
-    request.stubs(:params).returns({'code' => code,'state' => 'foobar'})
+    request.stubs(:params).returns('code' => code, 'state' => 'foobar')
     request.stubs(:path_info).returns('')
 
-    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
     result = strategy.callback_phase
 
-    assert result.kind_of?(Array)
-    assert result.first == 401, "Expecting unauthorized"
+    assert result.is_a?(Array)
+    assert result.first == 401, 'Expecting unauthorized'
   end
 
   def test_callback_phase_with_timeout
     code = SecureRandom.hex(16)
     state = SecureRandom.hex(16)
     nonce = SecureRandom.hex(16)
-    request.stubs(:params).returns({'code' => code,'state' => state})
+    request.stubs(:params).returns('code' => code, 'state' => state)
     request.stubs(:path_info).returns('')
 
     strategy.options.issuer = 'example.com'
 
     strategy.stubs(:access_token).raises(::Timeout::Error.new('error'))
-    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
     strategy.expects(:fail!)
     strategy.callback_phase
   end
@@ -162,13 +162,13 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     code = SecureRandom.hex(16)
     state = SecureRandom.hex(16)
     nonce = SecureRandom.hex(16)
-    request.stubs(:params).returns({'code' => code,'state' => state})
+    request.stubs(:params).returns('code' => code, 'state' => state)
     request.stubs(:path_info).returns('')
 
     strategy.options.issuer = 'example.com'
 
     strategy.stubs(:access_token).raises(::Errno::ETIMEDOUT.new('error'))
-    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
     strategy.expects(:fail!)
     strategy.callback_phase
   end
@@ -177,13 +177,13 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     code = SecureRandom.hex(16)
     state = SecureRandom.hex(16)
     nonce = SecureRandom.hex(16)
-    request.stubs(:params).returns({'code' => code,'state' => state})
+    request.stubs(:params).returns('code' => code, 'state' => state)
     request.stubs(:path_info).returns('')
 
     strategy.options.issuer = 'example.com'
 
     strategy.stubs(:access_token).raises(::SocketError.new('error'))
-    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
     strategy.expects(:fail!)
     strategy.callback_phase
   end
@@ -229,54 +229,53 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
                    token: access_token.access_token,
                    refresh_token: access_token.refresh_token,
                    expires_in: access_token.expires_in,
-                   scope: access_token.scope
-                 }, strategy.credentials)
+                   scope: access_token.scope }, strategy.credentials)
   end
 
   def test_option_send_nonce
-    strategy.options.client_options[:host] = "foobar.com"
+    strategy.options.client_options[:host] = 'foobar.com'
 
-    assert(strategy.authorize_uri =~ /nonce=/, "URI must contain nonce")
+    assert(strategy.authorize_uri =~ /nonce=/, 'URI must contain nonce')
 
     strategy.options.send_nonce = false
-    assert(!(strategy.authorize_uri =~ /nonce=/), "URI must not contain nonce")
+    assert(strategy.authorize_uri !~ /nonce=/, 'URI must not contain nonce')
   end
 
   def test_failure_endpoint_redirect
     OmniAuth.config.stubs(:failure_raise_out_environments).returns([])
     strategy.stubs(:env).returns({})
-    request.stubs(:params).returns({"error" => "access denied"})
+    request.stubs(:params).returns('error' => 'access denied')
 
     result = strategy.callback_phase
 
-    assert(result.is_a? Array)
-    assert(result[0] == 302, "Redirect")
-    assert(result[1]["Location"] =~ /\/auth\/failure/)
+    assert(result.is_a?(Array))
+    assert(result[0] == 302, 'Redirect')
+    assert(result[1]['Location'] =~ /\/auth\/failure/)
   end
 
   def test_state
-    strategy.options.state = lambda { 42 }
-    session = { "state" => 42 }
+    strategy.options.state = -> { 42 }
+    session = { 'state' => 42 }
 
     expected_redirect = /&state=/
     strategy.options.issuer = 'example.com'
-    strategy.options.client_options.host = "example.com"
+    strategy.options.client_options.host = 'example.com'
     strategy.expects(:redirect).with(regexp_matches(expected_redirect))
     strategy.request_phase
 
     # this should succeed as the correct state is passed with the request
-    test_callback_phase(session, { "state" => 42 })
+    test_callback_phase(session, 'state' => 42)
 
     # the following should fail because the wrong state is passed to the callback
     code = SecureRandom.hex(16)
-    request.stubs(:params).returns({"code" => code, "state" => 43})
-    request.stubs(:path_info).returns("")
-    strategy.call!({"rack.session" => session})
+    request.stubs(:params).returns('code' => code, 'state' => 43)
+    request.stubs(:path_info).returns('')
+    strategy.call!('rack.session' => session)
 
     result = strategy.callback_phase
 
-    assert result.kind_of?(Array)
-    assert result.first == 401, "Expecting unauthorized"
+    assert result.is_a?(Array)
+    assert result.first == 401, 'Expecting unauthorized'
   end
 
   def test_option_client_auth_method
@@ -285,32 +284,31 @@ class OmniAuth::Strategies::OpenIDConnectTest < StrategyTestCase
     nonce = SecureRandom.hex(16)
 
     opts = strategy.options.client_options
-    opts[:host] = "foobar.com"
-    strategy.options.issuer = "foobar.com"
+    opts[:host] = 'foobar.com'
+    strategy.options.issuer = 'foobar.com'
     strategy.options.client_auth_method = :not_basic
     strategy.options.client_signing_alg = :RS256
     strategy.options.client_jwk_signing_key = File.read('test/fixtures/jwks.json')
 
-    json_response = {access_token: 'test_access_token',
-                     id_token: File.read('test/fixtures/id_token.txt'),
-                     token_type: 'Bearer',
-    }.to_json
+    json_response = { access_token: 'test_access_token',
+                      id_token: File.read('test/fixtures/id_token.txt'),
+                      token_type: 'Bearer' }.to_json
     success = Struct.new(:status, :body).new(200, json_response)
 
     request.stubs(:path_info).returns('')
-    strategy.call!({'rack.session' => {'omniauth.state' => state, 'omniauth.nonce' => nonce}})
+    strategy.call!('rack.session' => { 'omniauth.state' => state, 'omniauth.nonce' => nonce })
 
     id_token = stub('OpenIDConnect::ResponseObject::IdToken')
-    id_token.stubs(:verify!).with({:issuer => strategy.options.issuer, :client_id => @identifier, :nonce => nonce}).returns(true)
+    id_token.stubs(:verify!).with(issuer: strategy.options.issuer, client_id: @identifier, nonce: nonce).returns(true)
     ::OpenIDConnect::ResponseObject::IdToken.stubs(:decode).returns(id_token)
 
     HTTPClient.any_instance.stubs(:post).with(
       "#{opts.scheme}://#{opts.host}:#{opts.port}#{opts.token_endpoint}",
-      {scope: 'openid', :grant_type => :client_credentials, :client_id => @identifier, :client_secret => @secret},
+      { scope: 'openid', grant_type: :client_credentials, client_id: @identifier, client_secret: @secret },
       {}
     ).returns(success)
 
-    assert(strategy.send :access_token)
+    assert(strategy.send(:access_token))
   end
 
   def test_public_key_with_jwks
